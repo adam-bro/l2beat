@@ -125,26 +125,23 @@ describe('tokens', () => {
       process.env.COINGECKO_API_KEY,
     )
 
-    const coinsList = await coingeckoClient.getCoinList({
-      includePlatform: true,
-    })
+    /*
+    From Coingecko documentation:
+    "/coins/list" endpoint returns list of all supported coins
+    https://www.coingecko.com/en/api/documentation
+    */
+    const coinList = await coingeckoClient.getCoinList()
 
-    const result = new Map<EthereumAddress, CoingeckoId | undefined>()
+    const supportedCoins = new Set<CoingeckoId | undefined>()
 
-    coinsList.map((coin) => {
-      if (coin.platforms.ethereum)
-        result.set(EthereumAddress(coin.platforms.ethereum), coin.id)
+    coinList.map((coin) => {
+      supportedCoins.add(coin.id)
     })
 
     tokenList.map((token) => {
-      if (token.symbol === 'ETH') {
-        expect(token.coingeckoId).toEqual(CoingeckoId('ethereum'))
-      } else {
-        const expectedId = token.address && result.get(token.address)
-        if (expectedId) {
-          expect(token.coingeckoId).toEqual(expectedId)
-        }
-      }
+      expect(supportedCoins.has(token.coingeckoId), {
+        extraMessage: `${token.coingeckoId.toString()} is not supported by Coingecko API, change coingeckoId in config`,
+      }).toEqual(true)
     })
   })
 })
